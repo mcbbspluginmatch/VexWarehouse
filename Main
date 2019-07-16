@@ -1,0 +1,107 @@
+package com.moyu;
+
+import java.io.File;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import org.bukkit.Bukkit;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
+import org.bukkit.event.Listener;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.java.JavaPlugin;
+
+import lk.vexview.VexView;
+import lk.vexview.api.VexViewAPI;
+import lk.vexview.gui.VexInventoryGui;
+import lk.vexview.gui.components.VexSlot;
+import lk.vexview.gui.components.VexText;
+
+public class Main extends JavaPlugin implements Listener {
+	File folder = new File(getDataFolder(),"\\Datas");	//创建Datas文件夹
+	Map<String, VexInventoryGui> PLAYERINV = new HashMap<>();//创建仓库GUI Map
+	public ItemStack warehouseinv[] = new ItemStack[198];//仓库存储数据
+	public ItemStack warehouseplayerinv[] = new ItemStack[36];//仓库内玩家存储槽数据
+
+	@Override
+	public void onEnable() {
+		if(getServer().getPluginManager().getPlugin("VexView") != null && VexView.getInstance().isSlotSupport()) {
+			getServer().getConsoleSender().sendMessage("§2======§bVexWarehouse已成功开启§2======");
+			getServer().getConsoleSender().sendMessage("§2>当前版本:§6"+this.getDescription().getVersion());
+			getServer().getConsoleSender().sendMessage("§2>当前VexView版本:§6"+VexView.getInstance().getVersion());
+			getServer().getConsoleSender().sendMessage("§2>当前服务器版本:§6"+this.getServer().getBukkitVersion());
+			getServer().getConsoleSender().sendMessage("§b>作者：陌宇 §2 |  §b已成功支持物品槽");
+			getServer().getConsoleSender().sendMessage("§2====================================");
+		}else {
+			getServer().getConsoleSender().sendMessage("§4VexWarehouse开启失败，请检查是否启用VexView并支持自定义物品槽");
+			getServer().getPluginManager().disablePlugin(this);
+		}
+		Bukkit.getPluginManager().registerEvents(new PlayerListener(), this);
+		//如果没有Datas文件夹将创建一个
+		if(!folder.exists()) {
+			folder.mkdirs();
+		}
+	}
+
+	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
+		if (sender instanceof Player) {
+			if (args.length == 0) {
+				Player player = (Player) sender;
+				File file = new File(folder.getAbsolutePath()+"\\"+player.getUniqueId()+".yml");
+				FileConfiguration filec = YamlConfiguration.loadConfiguration(file);
+				@SuppressWarnings("unchecked")
+				List<ItemStack> itemlist = (List<ItemStack>) filec.get("Warehouseinv");
+				ItemStack[] playerinv = player.getInventory().getContents();//获取玩家背包
+				VexInventoryGui Warehouse = new VexInventoryGui("[local]warehouse.png", -1, -1, 523, 241, 523, 241, 985462568, 989456158);
+				PLAYERINV.put("PLAYERINV", Warehouse);
+				Warehouse.addComponent(new VexText(5, 3, Arrays.asList("§b仓库")));
+				//创建玩家背包物品槽
+				int x = 357;//玩家背包物品槽X坐标，默认为357
+				int y = 83;//玩家背包物品槽X坐标，默认为83
+				int s = 0;//玩家背包物品槽行循环次数
+				for(int i=0; i<=35; i++) {//创建36个玩家背包物品槽
+					Warehouse.addComponent(new VexSlot(i, x, y,playerinv[i]));
+					x+=18;//玩家背包物品槽每次增加的X坐标
+					s++;//玩家背包物品槽每次增加的行次数
+					if(x>=519 && s>=9) {//玩家背包物品槽X行坐标最大为519，并且添加的槽为9个
+						x=357;//玩家背包物品槽X坐标设置为357
+						y+=18;//玩家背包物品槽每次增加的Y坐标
+						s=0;//玩家背包物品槽行循环次数设置为0
+					}
+				}
+				//创建仓库物品槽
+				int x2 = 7;//仓库物品槽X坐标，默认为7
+				int y2 = 13;//仓库物品槽Y坐标，默认为13
+				int s2 = 0;//仓库物品槽行循环次数
+				for(int i2=0; i2<=197; i2++) {//创建198个仓库物品槽
+					Warehouse.addComponent(new VexSlot(i2+36, x2, y2,itemlist.get(i2)));
+					x2+=18;//仓库物品槽每次增加的X坐标
+					s2++;//仓库物品槽每次增加的行次数
+					if(x2>=133 && s2>=18) {//仓库物品槽X行坐标最大为133，并且添加的槽为18个
+						x2=7;//仓库物品槽X坐标设置为7
+						y2+=18;//仓库物品槽每次增加的Y坐标
+						s2=0;//仓库物品槽行循环次数设置为0
+					}
+				}
+				VexViewAPI.openGui(player, Warehouse);
+			}
+
+			return true;
+
+		} else {
+			sender.sendMessage("只能玩家使用！");
+		}
+
+		return false;
+	}
+	
+
+
+	@Override
+	public void onDisable() {
+	}
+}
