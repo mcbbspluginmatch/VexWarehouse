@@ -1,0 +1,53 @@
+package com.moyu;
+
+import java.io.File;
+import java.io.IOException;
+import org.bukkit.Bukkit;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.plugin.Plugin;
+
+import lk.vexview.event.gui.VexGuiCloseEvent;
+
+public class PlayerListener implements Listener{
+	Plugin plugin = Bukkit.getPluginManager().getPlugin("VexWarehouse");
+	Main main = (Main) Bukkit.getPluginManager().getPlugin("VexWarehouse");
+	
+	@EventHandler
+	public void onPlayerJoinEvent(PlayerJoinEvent pje) {//玩家上线时
+		File pjefile = new File(main.folder.getAbsolutePath()+"\\"+pje.getPlayer().getUniqueId()+".yml");
+		FileConfiguration pjcfilec = YamlConfiguration.loadConfiguration(pjefile);
+		if(!pjefile.exists()) {
+			try {
+				pjefile.createNewFile();//如果没有数据存储文件将自动创建
+				pjcfilec.set("Warehouseinv", main.warehouseinv);//创建的数据存储文件设置为null
+				pjcfilec.save(pjefile);//保存数据存储文件
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	@EventHandler
+	public void onVexGuiOpenEvent(VexGuiCloseEvent vgce) {//玩家关闭仓库GUI时
+		if(vgce.getGui().equals(main.PLAYERINV.get("PLAYERINV"))) {
+			File vgcefile = new File(main.folder.getAbsolutePath()+"\\"+vgce.getPlayer().getUniqueId()+".yml");
+			FileConfiguration vgcefilec = YamlConfiguration.loadConfiguration(vgcefile);
+			for(int i=0; i<=35; i++) {
+				main.warehouseplayerinv[i]=main.PLAYERINV.get("PLAYERINV").getSlotById(i).getItem();//将仓库内玩家存储槽添加进去
+			}
+			vgce.getPlayer().getInventory().setContents(main.warehouseplayerinv);//将仓库内玩家存储槽添加到玩家背包
+			for(int i2=0; i2<=197; i2++) {
+				main.warehouseinv[i2] = main.PLAYERINV.get("PLAYERINV").getSlotById(i2+36).getItem();
+				vgcefilec.set("Warehouseinv", main.warehouseinv);
+				try {
+					vgcefilec.save(vgcefile);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}//保存数据存储文件
+			}
+		}
+	}
+}
